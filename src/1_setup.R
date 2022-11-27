@@ -47,10 +47,10 @@ format_input_fx <- function(df, input_columns = INPUT_COLUMNS) {
     stop(glue('🛑 input .csv file is missing the following columns: {paste(missing_cols, collapse = ", ")}'))
   }
   
-  # Check: Duplicate ID
+  # Check: Duplicate IDs
   dup_ids <- df$ID[duplicated(df$ID)] 
   if ( length(dup_ids) != 0 ) {
-    stop(glue('🛑 ID column has duplicate values for the following IDs: {paste(dup_ids, collapse = ", ")}'))
+    stop(glue('🛑 ID column has duplicates for the following IDs: {paste(dup_ids, collapse = ", ")}'))
   }
   
   # Format: 
