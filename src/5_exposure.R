@@ -2,10 +2,10 @@ library(glue)
 sessionInfo()
 
 
-init_exposure_list_fx <- function(setup_df, N) {
+init_exposure_list_fx <- function(setup_df, n_tot) {
   # Initialize: main list
   exposure_list = list('ID' = list(), 
-                       'N' = N, 
+                       'N' = n_tot, 
                        'exclude_maxIDs' = NULL, 
                        'include_minIDs' = NULL
                       )
@@ -14,7 +14,7 @@ init_exposure_list_fx <- function(setup_df, N) {
   for (i in ids) {
     exposure_list$ID[[i]] = list('expo_n' = 0, # n = how many lineups
                               'expo_rp' = 0, # rp = running % of lineups
-                              'expo_tp' = 0, # tp = total (N) % of lineups
+                              'expo_tp' = 0, # tp = total (n_tot) % of lineups
                               'Min.Exposure' = setup_df$Min.Exposure[setup_df$ID == i][1], # input .csv file defined Min.Exposure
                               'Max.Exposure' = setup_df$Max.Exposure[setup_df$ID == i][1] # input .csv file defined Max.Exposure
                               ) 
@@ -24,14 +24,14 @@ init_exposure_list_fx <- function(setup_df, N) {
 }
 
 
-update_exposure_list_fx <- function(select_ids, run_iter, exposure_list = EXPOSURE_list) {
+update_exposure_list_fx <- function(select_ids, run_iter, exposure_list) {
   
   # Update: how many lineups
   for (i in select_ids) {
     exposure_list$ID[[i]]$expo_n <- exposure_list$ID[[i]]$expo_n + 1
   }
   
-  # Update: running % of lineups / total (N) % of lineups
+  # Update: running % of lineups / total (n_tot) % of lineups
   exposure_list$run_iter <- run_iter
   for (jj in names(exposure_list$ID)) {
     exposure_list$ID[[jj]]$expo_rp <- exposure_list$ID[[jj]]$expo_n / exposure_list$run_iter
@@ -57,7 +57,7 @@ update_exposure_list_fx <- function(select_ids, run_iter, exposure_list = EXPOSU
 }
 
 
-create_exposure_lp_fx <- function(setup_df, exposure_list = EXPOSURE_list) {
+create_exposure_lp_fx <- function(setup_df, exposure_list) {
   LP_list <- list('EXPO_MAX' = NULL, 
                   'EXPO_MIN' = NULL)
   
