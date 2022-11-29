@@ -32,6 +32,7 @@ CONSTRAINTS <- list(
                'notes' = '🏈 NFL'
                ),
   'GOLF' = list('PRICE_CAP' = 100000,
+                'POSITIONS' = list('G' = 'not used - but defined to avoid Check errors'),
                 'SIZE_CAP' = list('n' = 6),
                 'optimizer' = 'standard',
                 'notes' = '🐅 Golf'
@@ -85,10 +86,18 @@ setup_lp_fx <- function(get_sport, df, optimizer_options = OPTIMIZER_OPTIONS) {
   # Check: all Positions constraints are defined 
   missing_positions <- setdiff(df$Position, names(constr$POSITIONS))
   if ( length(missing_positions) != 0 ) {
+    print(glue('Double Check: the INPUT_FILE is for the following SPORT = {names(get_sport)}'))
     stop(glue('🛑 Position column has undefined constraints for the following Positions: {paste(missing_positions, collapse = ", ")}'))
   }
   
-  ## Multiple Position Optimizer 
+  # Check: all Positions in TEAM_CAP$exclude are legit
+  incorrect_positions_team_cap_exclude <- setdiff(constr$TEAM_CAP$exclude, names(constr$POSITIONS))
+  if ( length(incorrect_positions_team_cap_exclude) != 0 ) {
+    stop(glue('🛑 the positions in TEAM_CAP$exclude are undefined in POSITIONS for the following: {paste(incorrect_positions_team_cap_exclude, collapse = ", ")}'))
+  }
+  
+  
+  ## Optimizer: Multiple Position  
   if (constr$optimizer == 'multi_pos') {
     multi_df <- df[df$Position2 %in% names(constr$POSITIONS),]
     multi_df$Position <- multi_df$Position2
@@ -124,7 +133,7 @@ setup_lp_fx <- function(get_sport, df, optimizer_options = OPTIMIZER_OPTIONS) {
                                   )
   }
   
-  ## Flex Position Optimizer 
+  ## Optimizer: Flex Position
   if (constr$optimizer == 'flex_pos') {
     opt_df <- df
     
@@ -159,7 +168,7 @@ setup_lp_fx <- function(get_sport, df, optimizer_options = OPTIMIZER_OPTIONS) {
                                   )
   }
   
-  ## Simple Standard Optimizer
+  ## Optimizer: Simple Standard 
   if (constr$optimizer == 'standard') {
     opt_df <- df
     
