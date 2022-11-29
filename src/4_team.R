@@ -19,6 +19,12 @@ create_team_lp_fx <- function(setup_df, team_max_list, team_min_list, exclude_po
     stop(glue('🛑 the teams in TEAM_MIN are nonexistent: {paste(team_min_nonexistent, collapse = ", ")}'))
   }
   
+  # Check: all exclude_positions are legit
+  exclude_positions_nonlegit <- setdiff(exclude_positions, setup_df$Position)
+  if ( length(exclude_positions_nonlegit) != 0 ) {
+    stop(glue('🛑 the positions in exclude_positions are nonexistent: {paste(exclude_positions_nonlegit, collapse = ", ")}'))
+  }
+  
   
   team_names_max <- names(team_max_list)
   if (length(team_names_max) != 0) {
