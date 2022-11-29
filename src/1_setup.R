@@ -93,6 +93,7 @@ setup_lp_fx <- function(get_sport, df, optimizer_options = OPTIMIZER_OPTIONS) {
     multi_df <- df[df$Position2 %in% names(constr$POSITIONS),]
     multi_df$Position <- multi_df$Position2
     opt_df <- rbind(df, multi_df)
+    row.names(opt_df) <- NULL # reset the row names
     
     LP_dict[['PRICE_CAP']] <- list('con' = opt_df$Price, 
                                    'dir' = '<=', 
