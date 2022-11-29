@@ -2,7 +2,7 @@ library(glue)
 sessionInfo()
 
 
-create_team_lp_fx <- function(setup_df, team_max_list = TEAM_MAX, team_min_list = TEAM_MIN, exclude_positions = get_sport_fx(sport = SPORT)[[1]]$TEAM_CAP$exclude) {
+create_team_lp_fx <- function(setup_df, team_max_list, team_min_list, exclude_positions) {
   LP_list <- list('TEAM_MAX' = NULL, 
                   'TEAM_MIN' = NULL)
   team_names <- unique(setup_df$Team)    
