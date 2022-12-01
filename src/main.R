@@ -1,46 +1,93 @@
-## Initialize
-renv::restore()
-
 library(lpSolve)
 library(glue)
 sessionInfo()
 
-source('src/1_setup.R')
+
+source('src/1_setup.R') # ----------------------------------------------------------------------------------------------
+INPUT_df <- format_input_fx(df = read.csv(INPUT_FILE))
+SPORT_list = get_sport_fx(sport = SPORT)
+SETUP_list <- setup_lp_fx(get_sport = SPORT_list, 
+                          df = INPUT_df)
+# print(SETUP_list$DF)
+# print(SETUP_list$LP)
 
 
-## Select INPUT_FILE & SPORT ------------------------------------------------------------------------------------------
-INPUT_FILE <- 'data/NBA_Template1.csv' 
-SPORT <- 'NBA'
-
-# ---------------------------------------------------------------------------------------------------------------------
-
-input_df <- format_input_fx(df = read.csv(INPUT_FILE))
-get_sport <- get_sport_fx(sport = SPORT)
-setup_list <- setup_lp_fx(get_sport = get_sport, df = input_df)
+source('src/2_projection.R') # -----------------------------------------------------------------------------------------
 
 
-sol <- lp(direction = "max", 
-          objective.in = setup_list$DF$Projection, 
-          const.mat = do.call("rbind", lapply(setup_list$LP, get, x="con")),
-          const.dir = unlist(lapply(setup_list$LP, get, x="dir")),
-          const.rhs = unlist(lapply(setup_list$LP, get, x="rhs")),
-          all.bin = TRUE
-)
-setup_list$DF[sol$solution==1, ]
+source('src/3_stack.R') # ----------------------------------------------------------------------------------------------
+SETUP_list$LP[['POSITIONS_SAME_TEAM_MAX']] <- create_pos_same_team_max_lp_fx(setup_df = SETUP_list$DF,
+                                                positions_same_team_max = POSITIONS_SAME_TEAM_MAX)$POSITIONS_SAME_TEAM_MAX
+
+SETUP_list$LP[['POSITIONS_STACK']] <- create_positions_stack_lp_fx(setup_df = SETUP_list$DF,
+                                                                   positions_stack = POSITIONS_STACK)$POSITIONS_STACK
+# print(SETUP_list$LP)
 
 
-### Check List:
+source('src/4_team.R') # -----------------------------------------------------------------------------------------------
+team_LPs <- create_team_lp_fx(setup_df = SETUP_list$DF, 
+                              team_max_list = TEAM_MAX, 
+                              team_min_list = TEAM_MIN, 
+                              exclude_positions = SPORT_list[[1]]$TEAM_CAP$exclude)
+SETUP_list$LP[['TEAM_MAX']] <- team_LPs$TEAM_MAX
+SETUP_list$LP[['TEAM_MIN']] <- team_LPs$TEAM_MIN
+# print(SETUP_list$LP)
 
-# 1) Ability to use for multiple sports and salary/position constraints. Status: DONE (needs testing)
 
-# 2) Ability to add randomness to the projections the optimizer uses for each player. Status: TO-DO
+source('src/5_exposure.R') # -------------------------------------------------------------------------------------------
+EXPOSURE_list <- init_exposure_list_fx(setup_df = SETUP_list$DF, n_tot = N)
+# print(EXPOSURE_list)
 
-# 3) Ability to stack players by position from same team and also someone from their opponent. Status: TO-DO
 
-# 4) Ability to set max or min players from a specific team. Status: TO-DO
+# ----------------------------------------------------------------------------------------------------------------------
 
-# 5) Set exposure settings for each player via the CSV that the optimizer obides too. Status: TO-DO
+# CREATE LINEUPS: 
+SAVE_df <- data.frame()
+TRACKER_df <- data.frame()
+for (RUN in 1:N){
+  print(glue('{RUN} ) -----------------------------------------------------------------------------------------------'))
+  
+  # modify points projection
+  SETUP_list$DF <- append_projections_fx(setup_df = SETUP_list$DF, 
+                                         proj_df = modify_projections_fx(setup_df = SETUP_list$DF, method = METHOD))
+  
+  # solve
+  sol <- lp(direction = "max", 
+            objective.in = SETUP_list$DF$Projection_modify, 
+            const.mat = do.call("rbind", lapply(SETUP_list$LP, get, x="con")),
+            const.dir = unlist(lapply(SETUP_list$LP, get, x="dir")),
+            const.rhs = unlist(lapply(SETUP_list$LP, get, x="rhs")),
+            all.bin = TRUE
+  )
+  
+  # get solution
+  lineup_i <- SETUP_list$DF[sol$solution==1, ]
+  lineup_i$line_up <- RUN
+  
+  # append 
+  SAVE_df <- rbind(SAVE_df, lineup_i)
+  TRACKER_df <- rbind(TRACKER_df, sort(lineup_i$ID))
+  print(lineup_i)
+  
+  # update exposure list 
+  EXPOSURE_list <- update_exposure_list_fx(select_ids = lineup_i$ID, run = RUN, exposure_list = EXPOSURE_list)
+  
+  # create / recreate exposure constraints 
+  expo_LPs <- create_exposure_lp_fx(setup_df = SETUP_list$DF, exposure_list = EXPOSURE_list)
+  
+  # append exposure constraints 
+  SETUP_list$LP[['EXPO_MAX']] <- expo_LPs$EXPO_MAX
+  SETUP_list$LP[['EXPO_MIN']] <- expo_LPs$EXPO_MIN
 
-# 6) Print line ups in format that can be uploaded to our site. Status: TO-DO
+}
+names(TRACKER_df) <- sub("^","ID", 1:ncol(TRACKER_df))
+print(glue('Number of Duplicates: {sum(duplicated(TRACKER_df))}'))
 
+SAVE_df$IsDuplicate <- rep(duplicated(TRACKER_df), each = ncol(TRACKER_df))
+
+
+if (isTRUE(SAVE)) {
+  write.csv(SAVE_df, SAVE_PATH, row.names = FALSE)
+  print(glue('SAVED LINEUPS: {SAVE_PATH}'))
+}
 
