@@ -34,3 +34,65 @@ create_pos_same_team_max_lp_fx <- function(setup_df, positions_same_team_max) {
                                          )
   return(LP_list)
 }
+
+
+
+create_positions_stack_lp_fx <- function(setup_df, positions_stack) {
+  
+  # Setup:
+  LP_list <- list('POSITIONS_STACK' = NULL)
+  position_stack_names <- names(positions_stack)
+  if ( length(position_stack_names) == 0 ) {
+    return(LP_list)
+  }
+  
+  # Check: NEED TO ADD CHECKS 
+  
+  
+  # Functions: 
+  which_team_fx <- function(is_same, row_df) {
+    if (isTRUE(is_same)) {
+      team <- row_df$Team
+    }
+    if (isFALSE(is_same)) {
+      team <- row_df$Opponent
+    }
+    return(team)
+  }
+  
+  
+  # Constraint: 
+  con_matrix <- matrix(nrow = 0, ncol = nrow(setup_df))
+  for ( j in 1:length(position_stack_names) ) {
+    pos <- position_stack_names[[j]]
+    stack <- positions_stack[[j]]$stack
+    n <- positions_stack[[j]]$n
+    same_team <- positions_stack[[j]]$same_team
+    
+    pos_IDs <- setup_df$ID[setup_df$Position == pos]
+    
+    con_tmp <- t(sapply(pos_IDs, function(id) {
+      id_TF <- setup_df$ID == id & setup_df$Position == pos
+      # Check: NEED TO CHECK length(id_TF) == 1
+      team <- which_team_fx(same_team, setup_df[id_TF, ])
+      as.numeric(setup_df$ID != id & setup_df$Position %in% stack & setup_df$Team == team) + ifelse(id_TF, -n, 0)
+    }))
+    row.names(con_tmp) <- sub("^", glue('{pos}_{n}_{paste(stack, collapse = "-")}_{same_team}_'), row.names(con_tmp))  
+    con_matrix <- rbind(con_matrix, con_tmp)
+  }
+  
+  LP_list$POSITIONS_STACK <- list('con' = con_matrix,
+                                          'dir' = rep('>=', times=nrow(con_matrix)),
+                                          'rhs' = rep(0, each = nrow(con_matrix))
+  )
+  return(LP_list)
+}
+
+
+
+
+
+
+
+
+
