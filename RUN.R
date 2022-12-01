@@ -35,7 +35,7 @@ renv::restore()
     # list('MIA' = 1) - at least 1 players from Miami Dolphins 
 
 
-# TEAM_MIN : set minimum players from a certain team
+# TEAM_MAX : set minimum players from a certain team
   # Examples Explained 
     # list('MIA' = 2) - at most 2 players from Miami Dolphins 
 
