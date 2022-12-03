@@ -41,6 +41,7 @@ EXPOSURE_list <- init_exposure_list_fx(setup_df = SETUP_list$DF, n_tot = N)
 
 # ----------------------------------------------------------------------------------------------------------------------
 
+
 # CREATE LINEUPS: 
 SAVE_df <- data.frame()
 TRACKER_df <- data.frame()
@@ -86,8 +87,14 @@ print(glue('Number of Duplicates: {sum(duplicated(TRACKER_df))}'))
 SAVE_df$IsDuplicate <- rep(duplicated(TRACKER_df), each = ncol(TRACKER_df))
 
 
+source('src/6_format.R') # ---------------------------------------------------------------------------------------------
+FORMAT_df <- t(sapply(1:N, function(nn) format_lineup_fx(SAVE_df[SAVE_df$line_up == nn,], get_sport = SPORT_list)  ))
+
+
 if (isTRUE(SAVE)) {
   write.csv(SAVE_df, SAVE_PATH, row.names = FALSE)
+  write.csv(FORMAT_df, glue("{strsplit(SAVE_PATH, split='.csv')[[1]]}_FORMAT_.csv"))
+  
   print(glue('SAVED LINEUPS: {SAVE_PATH}'))
 }
 
