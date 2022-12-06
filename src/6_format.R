@@ -14,11 +14,11 @@ format_lineup_fx <- function(lineup_df, get_sport) {
   
 
   # Only for 'flex_pos' optimizer
-  if (SPORT_list[[1]]$optimizer == 'flex_pos'){
+  if (constr$optimizer == 'flex_pos'){
     
     # Determine min(ID) of the FLEX position
     pos_lineup_min <- unlist(lapply(positions_ord, min)) 
-    pos_lineup_select <- sapply(names(positions_ord), function(pos) sum(lineup_i$Position == pos))
+    pos_lineup_select <- sapply(names(positions_ord), function(pos) sum(lineup_df$Position == pos))
     pos_flex <- names(pos_lineup_select[pos_lineup_select != pos_lineup_min])
     flex_min_id <- min(lineup_df_so[lineup_df_so$Position == pos_flex, ]$ID)
     
